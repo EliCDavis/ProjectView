@@ -43,79 +43,92 @@ function TreeDisplayDirective() {
             self.inflatedTree = null;
 
             graph.setBackgroundRenderMethod(function (graph) {
+
                 var ctx = graph.getContext();
                 ctx.fillStyle = "#3949ab";
                 ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                if (graph.getNodes().length === 0) {
+                    ctx.font = "17px Monospace";
+                    var message = "Click on a user repository";
+                    var message2 = "or load one by name to begin.";
+                    var textDimensions = ctx.measureText(message);
+                    var textDimensions2 = ctx.measureText(message2);
+                    ctx.fillStyle = "white";
+                    ctx.fillText(message, (graph.getContext().canvas.width/2) - (textDimensions.width/2), graph.getContext().canvas.height/2);
+                    ctx.fillText(message2, (graph.getContext().canvas.width/2) - (textDimensions2.width/2), graph.getContext().canvas.height/2 + 21);
+                }
+
             });
 
 
             var _convertTreeToNodes = function (tree, parent) {
-                
+
                 tree.forEach(function (obj) {
-                    
+
                     var color = "";
                     var radius = parent ? parent.getRadius() * 0.7 : 300;
-                    
-                    if(obj.type === 'blob') {
+
+                    if (obj.type === 'blob') {
                         color = "#E3ECF5";
                         radius *= 0.8;
                     }
-                    
-                    if(obj.type === 'tree') {
+
+                    if (obj.type === 'tree') {
                         color = "#009688";
                     }
-                    
+
                     var node = graph.createNode({
-                        renderData : {
+                        renderData: {
                             color: color,
                             name: obj.name
                         },
-                        radius :  radius
+                        radius: radius
                     });
-                    
-                    if(obj.type === 'tree') {
+
+                    if (obj.type === 'tree') {
                         _convertTreeToNodes(obj.contents, node);
                     }
-                    
-                    if(parent) {
+
+                    if (parent) {
                         parent.addChild(node);
                     }
-                    
+
                 });
-                
+
             };
 
 
-            var _inflateTree = function(tree, path) {
-                
+            var _inflateTree = function (tree, path) {
+
                 path = path || '';
-                
+
                 return tree
-                    .filter(function(item){
-                        return item.path.indexOf(path) !== -1;
-                    })
-                    .map(function(item){
-                        item.name = item.path.replace(path,"");
-                        return item;
-                    })
-                    .filter(function(item){
-                        return item.name.indexOf('/') === -1;
-                    })
-                    .map(function(item){
-                        
-                        if(item.type === 'tree'){
-                            item.contents = _inflateTree(tree, path + item.name + "/");
-                        }
-                    
-                        return item;
-                    
-                    });
-                
+                        .filter(function (item) {
+                            return item.path.indexOf(path) !== -1;
+                        })
+                        .map(function (item) {
+                            item.name = item.path.replace(path, "");
+                            return item;
+                        })
+                        .filter(function (item) {
+                            return item.name.indexOf('/') === -1;
+                        })
+                        .map(function (item) {
+
+                            if (item.type === 'tree') {
+                                item.contents = _inflateTree(tree, path + item.name + "/");
+                            }
+
+                            return item;
+
+                        });
+
             };
-            
+
             $scope.repo = null;
 
-            Github.repositoryLoaded$.safeApply($scope, function(repo){
+            Github.repositoryLoaded$.safeApply($scope, function (repo) {
                 console.log(repo);
                 graph.clearNodes();
                 self.inflatedTree = _inflateTree(repo.tree);

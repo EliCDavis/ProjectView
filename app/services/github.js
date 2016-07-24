@@ -149,6 +149,16 @@ function GithubService() {
     });
 
 
+    self.starRepository = function(repoName){
+        _gh.getRepo(repoName).star(function(err, data){
+            console.log(err, data);
+        });
+    };
+    
+    self.getStarredRepositories = function(cb){
+        _me.listStarredRepos(cb);
+    };
+
     self.loadRepo = function(fullname){
         
         var repo = _gh.getRepo(fullname);

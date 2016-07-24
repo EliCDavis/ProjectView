@@ -29,8 +29,10 @@ function ToolbarDirective(){
     return {
         'restrict': 'E',
         'templateUrl': 'partials/directives/toolbar.directive.html',
-        'controller': /*@ngInject*/ function ($element, $scope) {
-            
+        'controller': /*@ngInject*/ function ($scope) {
+            $scope.openRepo = function(){
+                window.location = 'https://github.com/EliCDavis/ProjectView'
+            };
         }
     };
 }

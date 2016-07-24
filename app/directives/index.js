@@ -32,3 +32,4 @@ app.directive('pvRepositoryListing', require('./repositoryListingDirective.js'))
 app.directive('pvTreeDisplay', require('./treeDisplayDirective'));
 app.directive('pvRepositoryToolbar', require('./repositoryToolbarDirective'));
 app.directive('pvEnterRepositoryToView', require('./enterRepositoryToViewDirective'));
+app.directive('pvStarThisRepo', require('./starThisRepoDirective'));

@@ -1,8 +1,12 @@
 <md-toolbar class="md-hue-2" style='min-height: 40px; max-height: 40px;'>
     <div class="md-toolbar-tools">
+        <md-button ng-click="openRepo()" class="md-primary" aria-label="More" ng-click="reposListing.loadRepo(repo)">
+            <md-icon md-svg-src="img/icons/octo.svg" aria-label="github "></md-icon>
+        </md-button>
         <h2>
             <span>Project View</span>
         </h2>
         <span flex></span>
+        <pv-star-this-repo hide-xs></pv-star-this-repo>
     </div>
 </md-toolbar>
