@@ -1,0 +1,27 @@
+<md-card>
+    <md-card-title>
+        <md-card-title-text>
+            <span class="md-headline">Login to Github</span>
+            <span class="md-subhead">Without your log in we can only make <a href="https://developer.github.com/v3/#rate-limiting">60 requests an hour.</a></span>
+        </md-card-title-text>
+    </md-card-title>
+    <md-card-content>
+        <form>
+            <md-input-container class="md-block" flex-gt-sm>
+                <label>Username</label>
+                <input ng-model="login.username">
+            </md-input-container>
+            <md-input-container class="md-block" flex-gt-sm>
+                <label>Password</label>
+                <input type="password" ng-model="login.password">
+            </md-input-container>
+            <span style="color: red" ng-bind="login.longResponse"></span>
+        </form>
+    </md-card-content>
+    <md-card-actions layout="row" layout-align="end center">
+        <md-button ng-click="login.login()">Log in</md-button>
+    </md-card-actions>
+</md-card>
+<div style="background-color: white; margin: 8px; padding:8px;" md-whiteframe="3">
+    <h4>This project uses the node rendering library <a href="https://github.com/EliCDavis/NodeView">NodeView</a>.</h4>
+</div>

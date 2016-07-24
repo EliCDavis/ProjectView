@@ -1,0 +1,17 @@
+<md-card>
+    <md-card-title>
+        <md-card-title-text>
+            <span class="md-headline" ng-bind="userCard.profile.name"></span>
+            <span class="md-subhead" ng-bind="'Repositories:' + (userCard.profile.public_repos + userCard.profile.owned_private_repos)"></span>
+        </md-card-title-text>
+        <md-card-title-media style="margin-left: 25px;">
+            <div class="md-media-sm card-media">
+                <img ng-src="{{userCard.profile.avatar_url}}" style="border-radius: 50%;">
+            </div>
+        </md-card-title-media>
+    </md-card-title>
+    <md-card-actions layout="row" layout-align="end center">
+        <md-button ng-click="userCard.logout()">Logout</md-button>
+        <!--<md-button>Action 2</md-button>-->
+    </md-card-actions>
+</md-card>

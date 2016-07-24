@@ -1,0 +1,9 @@
+<h3>User's Repositories</h3>
+<md-list>
+    <md-list-item ng-repeat="repo in reposListing.repos| filter: { fork: false }">
+        <md-button class="md-primary" aria-label="More" ng-click="reposListing.loadRepo(repo)">
+            <md-icon md-svg-src="img/icons/ic_launch_black_24px.svg" aria-label="android "></md-icon>
+            <span ng-bind="repo.full_name"></span>
+        </md-button>
+    </md-list-item>
+</md-list>
