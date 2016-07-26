@@ -28,6 +28,10 @@
                 display: none;
             }
             
+            .md-button {
+                min-width: 55px;
+            }
+            
             pv-repository-listing {
                 overflow:auto;
                 background-color: white; 
@@ -41,7 +45,7 @@
         <pv-toolbar></pv-toolbar>
 
         <div class="content" layout-align="center center" layout="column" ng-hide="loggedIn">
-            <pv-github-login ></pv-github-login>
+            <pv-github-login></pv-github-login>
         </div>
 
         <div flex layout="row" layout-xs="column" ng-show="loggedIn" layout-margin>
@@ -50,12 +54,12 @@
 
                 <pv-user-login-card hide-xs></pv-user-login-card>
                 <pv-repository-listing hide-xs flex md-whiteframe="3"></pv-repository-listing>
-                <pv-enter-repository-to-view ></pv-enter-repository-to-view>
+                <pv-enter-repository-to-view></pv-enter-repository-to-view>
 
             </div>
 
             <div layout="column" flex >
-                <pv-tree-display flex layout="column" style='margin: 8px;'></pv-tree-display>
+                <pv-tree-display flex layout="column" style='margin: 8px;' md-whiteframe="3"></pv-tree-display>
             </div>
 
         </div>

@@ -22,7 +22,8 @@
  * THE SOFTWARE.
  */
 
-var NodeView = require('NodeView');
+var NodeView = require('../../../NodeView/src/Graph/Graph2D');
+var Rx = require('rx');
 
 module.exports = TreeDisplayDirective;
 
@@ -37,10 +38,17 @@ function TreeDisplayDirective() {
 
             var canvas = $element.find('canvas');
 
+            var MAX_NODES = 1000;
+
             var graph = new NodeView(canvas[0]);
             graph.setOption('applyGravity', false);
 
             self.inflatedTree = null;
+            
+            self.displayRepositoryControls$ = Github.repositoryLoaded$
+                .map(function(){
+                    return true;
+                });
 
             graph.setBackgroundRenderMethod(function (graph) {
 
@@ -55,12 +63,62 @@ function TreeDisplayDirective() {
                     var textDimensions = ctx.measureText(message);
                     var textDimensions2 = ctx.measureText(message2);
                     ctx.fillStyle = "white";
-                    ctx.fillText(message, (graph.getContext().canvas.width/2) - (textDimensions.width/2), graph.getContext().canvas.height/2);
-                    ctx.fillText(message2, (graph.getContext().canvas.width/2) - (textDimensions2.width/2), graph.getContext().canvas.height/2 + 21);
+                    ctx.fillText(message, (graph.getContext().canvas.width / 2) - (textDimensions.width / 2), graph.getContext().canvas.height / 2);
+                    ctx.fillText(message2, (graph.getContext().canvas.width / 2) - (textDimensions2.width / 2), graph.getContext().canvas.height / 2 + 21);
                 }
 
             });
 
+
+            /**
+             * A failing attempt to get the nodes to organize themselves
+             */
+            graph.setNodeAttractionMethod(function (node1, node2, extraData) {
+
+                var data = extraData;
+                if (data === undefined || data === null) {
+                    data = {};
+                }
+
+                var xDist = node2.pos[0] - node1.pos[0];
+                var yDist = node2.pos[1] - node1.pos[1];
+                var dist = Math.sqrt((xDist * xDist) + (yDist * yDist));
+
+                var masses = Math.abs(node1.mass * node2.mass);
+                var attraction = (masses / (dist * dist)) * 1.1;
+
+                // If we're too close then let's reject
+                if (dist < node1.mass + node2.mass) {
+                    attraction *= -2.5;
+                }
+
+
+                if (data.$groupPos) {
+                    attraction = .05;
+                }
+
+
+                if (node1.node && node2.node) {
+
+                    if (node1.node.isLinkedWith(node2.node)) {
+                        attraction  = .2;
+
+                        if (extraData.$linkData.$directedTowards) {
+
+                            if (node2.getId() === extraData.$linkData.$directedTowards.getId()) {
+                                attraction = 0;
+                            }
+
+                        }
+
+                    } else {
+                        attraction = 0;
+                    }
+
+                }
+
+                return attraction;
+            });
 
             var _convertTreeToNodes = function (tree, parent) {
 
@@ -91,7 +149,9 @@ function TreeDisplayDirective() {
                     }
 
                     if (parent) {
-                        parent.addChild(node);
+                        graph.linkNodes(parent, node, {
+                            $directedTowards: node
+                        });
                     }
 
                 });
@@ -128,13 +188,165 @@ function TreeDisplayDirective() {
 
             $scope.repo = null;
 
-            Github.repositoryLoaded$.safeApply($scope, function (repo) {
-                console.log(repo);
-                graph.clearNodes();
-                self.inflatedTree = _inflateTree(repo.tree);
-                _convertTreeToNodes(self.inflatedTree);
-                $scope.repo = repo;
-            }).subscribe();
+//            Github.repositoryLoaded$.safeApply($scope, function (repo) {
+//                console.log(repo);
+//                graph.clearNodes();
+//                self.inflatedTree = _inflateTree(repo.tree);
+//                _convertTreeToNodes(self.inflatedTree);
+//                $scope.repo = repo;
+//            }).subscribe();
+
+
+            self.getItemNameMatches = function(searchText){
+                
+                if(!searchText){
+                    return [];
+                }
+                
+                return $scope.repo.tree.filter(function(item){
+                    return item.path.toLowerCase().indexOf(searchText.toLowerCase()) !== -1;
+                });
+                
+            };
+            
+            self.itemSearchText = "";
+            
+            self.userAddedItemsToIgnore$ = new Rx.Subject();
+            self.userRemovedItemsFromIgnore$ = new Rx.Subject();
+            self.clearItemsBeingIgnored$ = Github.repositoryLoaded$;
+            
+            self.itemsBeingIgnored = [];
+
+            self.itemsBeingIgnored$ = Rx.Observable.merge(
+                    self.userAddedItemsToIgnore$.map(function(item){
+                        return {"added": item};
+                    }),
+                    self.userRemovedItemsFromIgnore$.map(function(item){
+                        return {"removed": item};
+                    }),
+                    self.clearItemsBeingIgnored$.map(function(item){
+                        return {"cleared": true};
+                    })
+                ).scan(function(acc, x){
+                    
+                    acc = acc || [];
+                    console.log("acc", acc);
+                    
+                    if(x.added){
+                        acc.push(x.added);
+                        return acc;
+                    } else if(x.removed) {
+                        
+                        if(acc.lengh === 0){
+                            return acc;
+                        }
+                        
+                        return acc.filter(function(item){
+                            return acc.path !== item.removed;
+                        });
+                    } else {
+                        console.log("cleared");
+                        self.itemsBeingIgnored = [];
+                        return [];
+                    }
+                    
+                },[]);
+
+            self.addItemToIgnore = function(item){
+                
+                if(!item){
+                    return;
+                }
+                
+                self.itemSearchText = "";
+
+                self.userAddedItemsToIgnore$.onNext(item);
+                
+                self.itemsBeingIgnored.push(item);
+                
+            };
+            
+            
+            self.removeItemFromIgnore = function(itemToRemove){
+                
+                if(!itemToRemove){
+                    return;
+                }
+                
+                self.itemsBeingIgnored = self.itemsBeingIgnored.filter(function(item){
+                    return itemToRemove.path !== item.path;
+                });
+                self.userRemovedItemsFromIgnore$.onNext(itemToRemove);
+            };
+            
+            var _refreshNodeView$ = Rx.Observable
+                .combineLatest(
+                    Github.repositoryLoaded$,
+                    self.itemsBeingIgnored$.startWith([undefined])
+                ).map(function(data){
+                    
+                    var repo = {
+                        commits: data[0].commits,
+                        details: data[0].details
+                    };
+                    
+                    var ignoredItems =  data[1];
+                    
+                    repo.tree = data[0].tree.filter(function(item){
+                        
+                        for(var i = 0; i < ignoredItems.length; i ++){
+                            
+                            if(!ignoredItems[i]){
+                                continue;
+                            }
+                            
+                            if(ignoredItems[i].type === "blob"){
+                                if(ignoredItems[i].path === item.path){
+                                    return false;
+                                }
+                            } else {
+                                if(item.path.indexOf(ignoredItems[i].path) === 0){
+                                    return false;
+                                }
+                            }
+                                
+                        }
+                        
+                        return true;
+                    });
+                    
+                    return {repo: repo, ignoredItems: ignoredItems};
+                
+                }).filter(function(data){
+                    if(data.repo.tree.length > MAX_NODES){
+                        console.log("That's way too big of a repository");
+                    }
+                    return data.repo.tree.length < MAX_NODES;
+                }).safeApply($scope, function(item){
+                    
+                    console.log("update!", item.ignoredItems);
+                    
+                    graph.clearNodes();
+                    self.inflatedTree = _inflateTree(item.repo.tree);
+                    _convertTreeToNodes(self.inflatedTree);
+                    $scope.repo = item.repo;
+                }).subscribe();
+            
+
+            self.userCommandToggleFileFilter$ = new Rx.Subject();
+            self.userCommandToggleFileFilter$.startWith(false);
+
+            self.showFileFilter$ = self.userCommandToggleFileFilter$
+                .merge(Github.repositoryLoaded$.map(function(){
+                    return lastValue = false;
+            }));
+
+            var lastValue = false;
+
+            self.toggleFileFilter = function(){
+                lastValue = !lastValue;
+                self.userCommandToggleFileFilter$.onNext(lastValue);
+            };
 
         }
     };

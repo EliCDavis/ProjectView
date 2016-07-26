@@ -24,6 +24,8 @@
     "gulp": "~3.8.5",
     "gulp-concat": "^2.6.0",
     "gulp-notify": "~1.4.0",
+    "gulp-streamify": "^1.0.2",
+    "gulp-uglify": "^1.5.4",
     "gulp-util": "~2.2.19",
     "rx": "^4.1.0",
     "rx-angular": "^1.1.3",

@@ -171,7 +171,6 @@ function GithubService() {
                 self.repositoryCommitsLoaded$.onNext(data);
                 repo.getTree(data[0].commit.tree.sha+"?recursive=1", function(e,d){
                     if(!e){
-                        console.log(d);
                         self.repositoryTreeLoaded$.onNext(d.tree);
                     }
                 });

@@ -12,6 +12,8 @@ var watchify = require('watchify');
 var notify = require("gulp-notify");
 var concat = require('gulp-concat');
 var ngAnnotate = require("browserify-ngannotate");
+var uglify = require("gulp-uglify");
+var streamify = require("gulp-streamify");
 
 var scriptsDir = './app';
 var buildDir = './public';
@@ -26,15 +28,26 @@ function handleErrors() {
 }
 
 // Based on: http://blog.avisi.nl/2014/04/25/how-to-keep-a-fast-build-with-browserify-and-reactjs/
-function buildScript(file, watch) {
+function buildScript(file, watch, minify) {
+    
+    minify = minify || false;
+    
     var props = {entries: [scriptsDir + '/' + file], debug: true, cache: {}, packageCache: {}};
     var bundler = watch ? watchify(browserify(props)) : browserify(props);
     bundler.transform(ngAnnotate);
     function rebundle() {
         var stream = bundler.bundle({debug: true});
-        return stream.on('error', handleErrors)
+        if(minify){
+            return stream.on('error', handleErrors)
+                .pipe(source(file))
+                .pipe(streamify(uglify()))
+                .pipe(gulp.dest(buildDir + '/'));
+        } else {
+            return stream.on('error', handleErrors)
                 .pipe(source(file))
                 .pipe(gulp.dest(buildDir + '/'));
+        }
+        
     }
     bundler.on('update', function () {
         rebundle();
@@ -44,7 +57,7 @@ function buildScript(file, watch) {
 }
 
 gulp.task('build', function () {
-    return buildScript('main.js', false);
+    return buildScript('main.js', false, true);
 });
 
 gulp.task('default', ['build'], function () {
@@ -55,7 +68,7 @@ gulp.task('client-css', function () {
     gulp.src([
         'node_modules/angular-material/angular-material.min.css'
     ])
-            .pipe(concat('style.css'))
-            .pipe(gulp.dest(buildDir));
+        .pipe(concat('style.css'))
+        .pipe(gulp.dest(buildDir));
 
 });
