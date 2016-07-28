@@ -188,15 +188,6 @@ function TreeDisplayDirective() {
 
             $scope.repo = null;
 
-//            Github.repositoryLoaded$.safeApply($scope, function (repo) {
-//                console.log(repo);
-//                graph.clearNodes();
-//                self.inflatedTree = _inflateTree(repo.tree);
-//                _convertTreeToNodes(self.inflatedTree);
-//                $scope.repo = repo;
-//            }).subscribe();
-
-
             self.getItemNameMatches = function(searchText){
                 
                 if(!searchText){
@@ -279,7 +270,7 @@ function TreeDisplayDirective() {
                 self.userRemovedItemsFromIgnore$.onNext(itemToRemove);
             };
             
-            var _refreshNodeView$ = Rx.Observable
+            Rx.Observable
                 .combineLatest(
                     Github.repositoryLoaded$,
                     self.itemsBeingIgnored$.startWith([undefined])
@@ -323,9 +314,6 @@ function TreeDisplayDirective() {
                     }
                     return data.repo.tree.length < MAX_NODES;
                 }).safeApply($scope, function(item){
-                    
-                    console.log("update!", item.ignoredItems);
-                    
                     graph.clearNodes();
                     self.inflatedTree = _inflateTree(item.repo.tree);
                     _convertTreeToNodes(self.inflatedTree);
@@ -333,19 +321,37 @@ function TreeDisplayDirective() {
                 }).subscribe();
             
 
-            self.userCommandToggleFileFilter$ = new Rx.Subject();
-            self.userCommandToggleFileFilter$.startWith(false);
+            self.userToggleSideView$ = new Rx.Subject();
 
-            self.showFileFilter$ = self.userCommandToggleFileFilter$
-                .merge(Github.repositoryLoaded$.map(function(){
-                    return lastValue = false;
-            }));
+            self.lastTreeCommand$ = Github.repositoryLoaded$
+                    .map(function(){
+                        return {repoLoaded: true};
+                    }).merge(self.userToggleSideView$);
 
-            var lastValue = false;
+            self.showCommitView$ = self.lastTreeCommand$
+                .scan(function(acc, x){
+                    return x.commitView? !acc : false;
+                }, false).share();
+            
+            self.showFileFilter$ = self.lastTreeCommand$
+                .scan(function(acc, x){
+                    return x.fileFilter? !acc : false;
+                }, false).share();
+            
+            self.showSidebar$ = self.showFileFilter$
+                    .combineLatest(
+                        self.showCommitView$,
+                        function(fileFilter, commitView){
+                            return fileFilter || commitView;
+                        }
+                    ).share();
 
             self.toggleFileFilter = function(){
-                lastValue = !lastValue;
-                self.userCommandToggleFileFilter$.onNext(lastValue);
+                self.userToggleSideView$.onNext({fileFilter: true});
+            };
+
+            self.toggleCommitView = function(){
+                self.userToggleSideView$.onNext({commitView: true});
             };
 
         }

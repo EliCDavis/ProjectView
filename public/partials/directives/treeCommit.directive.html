@@ -1,0 +1,12 @@
+<h3>
+    Commit History
+</h3>
+
+<md-list>
+    <md-list-item class="md-2-line" ng-repeat="commit in commits">
+        <div class="md-list-item-text">
+            <h3>{{commit.committer.login}}</h3>
+            <p>{{commit.commit.message}}</p>
+        </div>
+    </md-list-item>
+</md-list>

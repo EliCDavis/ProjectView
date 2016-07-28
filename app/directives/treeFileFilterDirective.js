@@ -23,15 +23,15 @@
  */
 
 
-var app = require("angular").module('Project View');
+module.exports = TreeFileFilterDirective;
 
-app.directive('pvToolbar', require('./toolbarDirective.js'));
-app.directive('pvGithubLogin', require('./githubLoginDirective.js'));
-app.directive('pvUserLoginCard', require('./userLoginCardDirective.js'));
-app.directive('pvRepositoryListing', require('./repositoryListingDirective.js'));
-app.directive('pvTreeDisplay', require('./treeDisplayDirective'));
-app.directive('pvRepositoryToolbar', require('./repositoryToolbarDirective'));
-app.directive('pvEnterRepositoryToView', require('./enterRepositoryToViewDirective'));
-app.directive('pvStarThisRepo', require('./starThisRepoDirective'));
-app.directive('pvFileFilter', require('./treeFileFilterDirective'));
-app.directive('pvTreeCommit', require('./treeCommitDirective'));
+function TreeFileFilterDirective() {
+    return {
+        'restrict': 'E',
+        'templateUrl': 'partials/directives/treeFileFilter.directive.html',
+        'controllerAs': 'fileFilter',
+        'controller': /*@ngInject*/ function () {
+            
+        }
+    }
+}

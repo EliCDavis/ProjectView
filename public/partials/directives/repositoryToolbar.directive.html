@@ -2,7 +2,17 @@
     <div class="md-toolbar-tools">
         
         <md-button ng-show="treeDisplay.displayRepositoryControls$" ng-click="treeDisplay.toggleFileFilter()" class="md-primary" aria-label="Filter Repository" >
+            <md-tooltip>
+                Filter Node View
+            </md-tooltip>
             <md-icon md-svg-src="img/icons/ic_visibility_white_24px.svg" aria-label="Visibile"></md-icon>
+        </md-button>
+        
+        <md-button ng-show="treeDisplay.displayRepositoryControls$" ng-click="treeDisplay.toggleCommitView()" class="md-primary" aria-label="View Commits">
+            <md-tooltip>
+                Highlight Commits
+            </md-tooltip>
+            <md-icon md-svg-src="img/icons/ic_linear_scale_white_24px.svg" aria-label="Visibile"></md-icon>
         </md-button>
         
         <span flex></span>

@@ -61,12 +61,11 @@ function GithubService() {
     
     self.repositoryCommitsLoaded$ = new Rx.ReplaySubject(1);
     
-    
     self.repositoryTreeLoaded$ = new Rx.ReplaySubject(1);
     
     self.repositoryDetailsLoaded$ = new Rx.ReplaySubject(1);
 
-    self.repositoryLoaded$ = Rx.Rx.Observable.zip(
+    self.repositoryLoaded$ = Rx.Observable.zip(
         self.repositoryCommitsLoaded$,
         self.repositoryTreeLoaded$,
         self.repositoryDetailsLoaded$,
@@ -162,7 +161,6 @@ function GithubService() {
     self.loadRepo = function(fullname){
         
         var repo = _gh.getRepo(fullname);
-        
         
         // One day I'll make this look pretty....
         // Have to get a tree sha, done so by grabbing commits and looking at their tree sha.

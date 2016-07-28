@@ -1,0 +1,31 @@
+<h3>List Files To Ignore On The Graph</h3>
+
+<md-autocomplete
+    md-no-cache="true"
+    md-search-text="treeDisplay.itemSearchText"
+    md-selected-item-change="treeDisplay.addItemToIgnore(item)"
+    md-items="item in treeDisplay.getItemNameMatches(treeDisplay.itemSearchText)"
+    md-item-text="item.path"
+    md-min-length="1"
+    placeholder="Begin typing file or directory">
+    <md-item-template>
+        <md-icon ng-show="item.type === 'blob'" md-svg-src="img/icons/ic_insert_drive_file_black_24px.svg"></md-icon>
+        <md-icon ng-show="item.type === 'tree'" md-svg-src="img/icons/ic_folder_black_24px.svg"></md-icon>
+        <span md-highlight-text="treeDisplay.itemSearchText" md-highlight-flags="^i">{{item.path}}</span>
+    </md-item-template>
+    <md-not-found>
+        No matches for "{{treeDisplay.itemSearchText}}".
+    </md-not-found>
+</md-autocomplete>
+
+<md-list>
+    <md-list-item class="md-2-line" ng-repeat="item in treeDisplay.itemsBeingIgnored">
+        <md-button style="min-width: 0px;" ng-click="treeDisplay.removeItemFromIgnore(item)">
+            <md-icon md-svg-src="img/icons/ic_clear_black_24px.svg"></md-icon>
+        </md-button>
+        <div class="md-list-item-text">
+            <h3>{{item.name}}</h3>
+            <p>{{item.path}}</p>
+        </div>
+    </md-list-item>
+</md-list>
