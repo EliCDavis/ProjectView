@@ -19,8 +19,9 @@ app.config(['$provide', function ($provide) {
         rxDecorateDirective($provide, 'ngDisabled');
         rxDecorateDirective($provide, 'ngIf');
         rxDecorateDirective($provide, 'ngBind');
-    }])
+    }]);
 
+require('./filters');
 require('./services');
 require('./directives');
 require('./controllers');

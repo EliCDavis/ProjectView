@@ -44,11 +44,11 @@ function TreeDisplayDirective() {
             graph.setOption('applyGravity', false);
 
             self.inflatedTree = null;
-            
+
             self.displayRepositoryControls$ = Github.repositoryLoaded$
-                .map(function(){
-                    return true;
-                });
+                    .map(function () {
+                        return true;
+                    });
 
             graph.setBackgroundRenderMethod(function (graph) {
 
@@ -68,6 +68,11 @@ function TreeDisplayDirective() {
                 }
 
             });
+
+            graph.setDefaultNodeRenderAndMouseDetection(
+                    require('./rendering/nodeRender'), function (node, graph, mousePos) {
+                        return (node.distanceFrom(mousePos) <= node.getRadius() * .8);
+                    });
 
 
             /**
@@ -101,7 +106,7 @@ function TreeDisplayDirective() {
                 if (node1.node && node2.node) {
 
                     if (node1.node.isLinkedWith(node2.node)) {
-                        attraction  = .2;
+                        attraction = .2;
 
                         if (extraData.$linkData.$directedTowards) {
 
@@ -139,7 +144,8 @@ function TreeDisplayDirective() {
                     var node = graph.createNode({
                         renderData: {
                             color: color,
-                            name: obj.name
+                            name: obj.name,
+                            commitDetails: obj.commitDetails
                         },
                         radius: radius
                     });
@@ -188,169 +194,210 @@ function TreeDisplayDirective() {
 
             $scope.repo = null;
 
-            self.getItemNameMatches = function(searchText){
-                
-                if(!searchText){
+            $scope.viewCommit = function (commit) {
+                Github.loadCommitForRepository($scope.repo.details.full_name, commit.sha);
+            };
+
+            self.getItemNameMatches = function (searchText) {
+
+                if (!searchText) {
                     return [];
                 }
-                
-                return $scope.repo.tree.filter(function(item){
+
+                return $scope.repo.tree.filter(function (item) {
                     return item.path.toLowerCase().indexOf(searchText.toLowerCase()) !== -1;
                 });
-                
+
             };
-            
+
             self.itemSearchText = "";
-            
+
             self.userAddedItemsToIgnore$ = new Rx.Subject();
             self.userRemovedItemsFromIgnore$ = new Rx.Subject();
             self.clearItemsBeingIgnored$ = Github.repositoryLoaded$;
-            
+
             self.itemsBeingIgnored = [];
 
             self.itemsBeingIgnored$ = Rx.Observable.merge(
-                    self.userAddedItemsToIgnore$.map(function(item){
+                    self.userAddedItemsToIgnore$.map(function (item) {
                         return {"added": item};
                     }),
-                    self.userRemovedItemsFromIgnore$.map(function(item){
+                    self.userRemovedItemsFromIgnore$.map(function (item) {
                         return {"removed": item};
                     }),
-                    self.clearItemsBeingIgnored$.map(function(item){
+                    self.clearItemsBeingIgnored$.map(function (item) {
                         return {"cleared": true};
                     })
-                ).scan(function(acc, x){
-                    
-                    acc = acc || [];
-                    console.log("acc", acc);
-                    
-                    if(x.added){
-                        acc.push(x.added);
-                        return acc;
-                    } else if(x.removed) {
-                        
-                        if(acc.lengh === 0){
-                            return acc;
-                        }
-                        
-                        return acc.filter(function(item){
-                            return acc.path !== item.removed;
-                        });
-                    } else {
-                        console.log("cleared");
-                        self.itemsBeingIgnored = [];
-                        return [];
-                    }
-                    
-                },[]);
+                    ).scan(function (acc, x) {
 
-            self.addItemToIgnore = function(item){
-                
-                if(!item){
+                if (x.added) {
+                    acc.push(x.added);
+                    return acc;
+                } else if (x.removed) {
+
+                    if (acc.lengh === 0) {
+                        return acc;
+                    }
+
+                    return acc.filter(function (item) {
+                        return acc.path !== item.removed;
+                    });
+                } else {
+                    self.itemsBeingIgnored = [];
+                    return [];
+                }
+
+            }, []);
+
+            self.addItemToIgnore = function (item) {
+
+                if (!item) {
                     return;
                 }
-                
+
                 self.itemSearchText = "";
 
                 self.userAddedItemsToIgnore$.onNext(item);
-                
+
                 self.itemsBeingIgnored.push(item);
-                
+
             };
-            
-            
-            self.removeItemFromIgnore = function(itemToRemove){
-                
-                if(!itemToRemove){
+
+
+            self.removeItemFromIgnore = function (itemToRemove) {
+
+                if (!itemToRemove) {
                     return;
                 }
-                
-                self.itemsBeingIgnored = self.itemsBeingIgnored.filter(function(item){
+
+                self.itemsBeingIgnored = self.itemsBeingIgnored.filter(function (item) {
                     return itemToRemove.path !== item.path;
                 });
                 self.userRemovedItemsFromIgnore$.onNext(itemToRemove);
             };
-            
+
+            /**
+             * Stream for when nodeview should refresh to display new nodes
+             */
             Rx.Observable
-                .combineLatest(
-                    Github.repositoryLoaded$,
-                    self.itemsBeingIgnored$.startWith([undefined])
-                ).map(function(data){
-                    
-                    var repo = {
-                        commits: data[0].commits,
-                        details: data[0].details
-                    };
-                    
-                    var ignoredItems =  data[1];
-                    
-                    repo.tree = data[0].tree.filter(function(item){
-                        
-                        for(var i = 0; i < ignoredItems.length; i ++){
-                            
-                            if(!ignoredItems[i]){
-                                continue;
-                            }
-                            
-                            if(ignoredItems[i].type === "blob"){
-                                if(ignoredItems[i].path === item.path){
-                                    return false;
-                                }
-                            } else {
-                                if(item.path.indexOf(ignoredItems[i].path) === 0){
-                                    return false;
-                                }
-                            }
-                                
+                    .combineLatest(
+                            Github.repositoryLoaded$,
+                            self.itemsBeingIgnored$.startWith([undefined]),
+                            Github.commits$.startWith(undefined)
+                            ).map(function (data) {
+
+                var repo = {
+                    commits: data[0].commits,
+                    details: data[0].details
+                };
+
+                var ignoredItems = data[1];
+
+                var newCommit = data[2];
+
+                console.log("Tree Display New Commit", newCommit);
+
+                // Add in any deletions that happened during te commit to be rendered.
+                if (newCommit) {
+                    for (var i = 0; i < newCommit.files.length; i++) {
+                        if(newCommit.files[i].status === "removed"){
+                            newCommit.files[i].path = newCommit.files[i].filename
+                            data[0].tree.push(newCommit.files[i]);
                         }
-                        
-                        return true;
+                    }
+                }
+
+                repo.tree = data[0].tree.filter(function (item) {
+
+                    for (var i = 0; i < ignoredItems.length; i++) {
+
+                        if (!ignoredItems[i]) {
+                            continue;
+                        }
+
+                        if (ignoredItems[i].type === "blob") {
+                            if (ignoredItems[i].path === item.path) {
+                                return false;
+                            }
+                        } else {
+                            if (item.path.indexOf(ignoredItems[i].path) === 0) {
+                                return false;
+                            }
+                        }
+
+                    }
+
+                    return true;
+                });
+
+                if (newCommit) {
+                    repo.tree = repo.tree.map(function (item) {
+
+                        for (var i = 0; i < newCommit.files.length; i++) {
+
+                            if (newCommit.files[i].filename === item.path) {
+                                item.commitDetails = {
+                                    additions: newCommit.files[i].additions,
+                                    deletions: newCommit.files[i].deletions,
+                                    changes: newCommit.files[i].changes,
+                                    status: newCommit.files[i].status
+                                };
+                                console.log(item);
+                            }
+
+                        }
+
+                        return item;
                     });
                     
-                    return {repo: repo, ignoredItems: ignoredItems};
-                
-                }).filter(function(data){
-                    if(data.repo.tree.length > MAX_NODES){
-                        console.log("That's way too big of a repository");
-                    }
-                    return data.repo.tree.length < MAX_NODES;
-                }).safeApply($scope, function(item){
-                    graph.clearNodes();
-                    self.inflatedTree = _inflateTree(item.repo.tree);
-                    _convertTreeToNodes(self.inflatedTree);
-                    $scope.repo = item.repo;
-                }).subscribe();
-            
+                    
+                }
+
+                return {repo: repo, ignoredItems: ignoredItems};
+
+            }).filter(function (data) {
+                if (data.repo.tree.length > MAX_NODES) {
+                    console.log("That's way too big of a repository");
+                }
+                return data.repo.tree.length < MAX_NODES;
+            }).safeApply($scope, function (item) {
+                graph.clearNodes();
+                self.inflatedTree = _inflateTree(item.repo.tree);
+                _convertTreeToNodes(self.inflatedTree);
+                $scope.repo = item.repo;
+            }).subscribe();
+
 
             self.userToggleSideView$ = new Rx.Subject();
 
             self.lastTreeCommand$ = Github.repositoryLoaded$
-                    .map(function(){
+                    .map(function () {
                         return {repoLoaded: true};
                     }).merge(self.userToggleSideView$);
 
             self.showCommitView$ = self.lastTreeCommand$
-                .scan(function(acc, x){
-                    return x.commitView? !acc : false;
-                }, false).share();
-            
+                    .scan(function (acc, x) {
+                        return x.commitView ? !acc : false;
+                    }, false).share();
+
             self.showFileFilter$ = self.lastTreeCommand$
-                .scan(function(acc, x){
-                    return x.fileFilter? !acc : false;
-                }, false).share();
-            
+                    .scan(function (acc, x) {
+                        return x.fileFilter ? !acc : false;
+                    }, false).share();
+
             self.showSidebar$ = self.showFileFilter$
                     .combineLatest(
-                        self.showCommitView$,
-                        function(fileFilter, commitView){
-                            return fileFilter || commitView;
-                        }
+                            self.showCommitView$,
+                            function (fileFilter, commitView) {
+                                return fileFilter || commitView;
+                            }
                     ).share();
 
-            self.toggleFileFilter = function(){
+            self.toggleFileFilter = function () {
                 self.userToggleSideView$.onNext({fileFilter: true});
             };
 
-            self.toggleCommitView = function(){
+            self.toggleCommitView = function () {
                 self.userToggleSideView$.onNext({commitView: true});
             };
 

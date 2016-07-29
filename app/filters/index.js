@@ -23,20 +23,5 @@
  */
 
 
-module.exports = TreeCommitDirective;
-
-function TreeCommitDirective() {
-    return {
-        'restrict': 'E',
-        'templateUrl': 'partials/directives/treeCommit.directive.html',
-        'controllerAs': 'treeCommit',
-        'controller': /*@ngInject*/ function ($scope, Github) {
-            
-            Github.repositoryCommitsLoaded$.safeApply($scope, function(commits){
-                console.log(commits);
-                $scope.commits = commits;
-            }).subscribe();
-            
-        }
-    };
-}
+var app = require("angular").module('Project View');
+app.filter('truncate', require('./truncate'));

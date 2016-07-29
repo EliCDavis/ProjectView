@@ -3,8 +3,7 @@
 <div layout="row" flex layout-sm="column">
 
     <div ng-show="treeDisplay.showSidebar$" layout="column"   flex-md="40" flex-gt-md="25">
-        <div flex style="background-color: white;" layout-padding>
-            
+        <div flex style="background-color: white; overflow: auto;" layout-padding>
             <pv-file-filter ng-show="treeDisplay.showFileFilter$"></pv-file-filter>
             <pv-tree-commit ng-show="treeDisplay.showCommitView$"></pv-tree-commit>
         </div>
