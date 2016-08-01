@@ -38,7 +38,7 @@ function TreeDisplayDirective() {
 
             var canvas = $element.find('canvas');
 
-            var MAX_NODES = 1000;
+            var MAX_NODES = 800;
 
             var graph = new NodeView(canvas[0]);
             graph.setOption('applyGravity', false);
@@ -125,9 +125,24 @@ function TreeDisplayDirective() {
                 return attraction;
             });
 
+            var curNodesDisplayed = 0;
+
             var _convertTreeToNodes = function (tree, parent) {
 
+                if  (!parent) {
+                    curNodesDisplayed = 0;
+                }
+
+                if (curNodesDisplayed > MAX_NODES) {
+                    return;
+                }
+
                 tree.forEach(function (obj) {
+
+                    if (curNodesDisplayed > MAX_NODES) {
+                        return;
+                    }
+                    curNodesDisplayed ++;
 
                     var color = "";
                     var radius = parent ? parent.getRadius() * 0.7 : 300;
@@ -138,7 +153,7 @@ function TreeDisplayDirective() {
                     }
 
                     if (obj.type === 'tree') {
-                        color = "#009688";
+                        color = "#10A0C8";
                     }
 
                     var node = graph.createNode({
@@ -214,7 +229,7 @@ function TreeDisplayDirective() {
 
             self.userAddedItemsToIgnore$ = new Rx.Subject();
             self.userRemovedItemsFromIgnore$ = new Rx.Subject();
-            self.clearItemsBeingIgnored$ = Github.repositoryLoaded$;
+            self.clearItemsBeingIgnored$ = Github.repositoryDetailsLoaded$;
 
             self.itemsBeingIgnored = [];
 
@@ -277,9 +292,10 @@ function TreeDisplayDirective() {
             };
 
             /**
-             * Stream for when nodeview should refresh to display new nodes
+             * Stream of files that come from the repository tree + any extra 
+             * files found in the currently loaded commit if there is one.
              */
-            Rx.Observable
+            var _newFilesForDisplay$ = Rx.Observable
                     .combineLatest(
                             Github.repositoryLoaded$,
                             self.itemsBeingIgnored$.startWith([undefined]),
@@ -295,14 +311,13 @@ function TreeDisplayDirective() {
 
                 var newCommit = data[2];
 
-                console.log("Tree Display New Commit", newCommit);
-
                 // Add in any deletions that happened during te commit to be rendered.
+                var additionalFiles = [];
                 if (newCommit) {
                     for (var i = 0; i < newCommit.files.length; i++) {
                         if(newCommit.files[i].status === "removed"){
-                            newCommit.files[i].path = newCommit.files[i].filename
-                            data[0].tree.push(newCommit.files[i]);
+                            newCommit.files[i].path = newCommit.files[i].filename;
+                            additionalFiles.push(newCommit.files[i]);
                         }
                     }
                 }
@@ -330,6 +345,10 @@ function TreeDisplayDirective() {
                     return true;
                 });
 
+                additionalFiles.forEach(function(file){
+                    repo.tree.push(file);
+                });
+
                 if (newCommit) {
                     repo.tree = repo.tree.map(function (item) {
 
@@ -342,7 +361,6 @@ function TreeDisplayDirective() {
                                     changes: newCommit.files[i].changes,
                                     status: newCommit.files[i].status
                                 };
-                                console.log(item);
                             }
 
                         }
@@ -350,31 +368,65 @@ function TreeDisplayDirective() {
                         return item;
                     });
                     
-                    
                 }
 
                 return {repo: repo, ignoredItems: ignoredItems};
 
-            }).filter(function (data) {
-                if (data.repo.tree.length > MAX_NODES) {
-                    console.log("That's way too big of a repository");
-                }
-                return data.repo.tree.length < MAX_NODES;
-            }).safeApply($scope, function (item) {
-                graph.clearNodes();
-                self.inflatedTree = _inflateTree(item.repo.tree);
-                _convertTreeToNodes(self.inflatedTree);
+            }).share();
+
+            _newFilesForDisplay$.safeApply($scope, function (item) {
                 $scope.repo = item.repo;
             }).subscribe();
 
+            var _newTreeForDisplay$ = _newFilesForDisplay$.filter(function (data) {
+                return data.repo.tree.length < MAX_NODES;
+            }).share();
+            
+            _newFilesForDisplay$.safeApply($scope, function (item) {
+                graph.clearNodes();
+                self.inflatedTree = _inflateTree(item.repo.tree);
+                _convertTreeToNodes(self.inflatedTree);
+            }).subscribe();
 
+            /**
+             * A stream of how many extra files that are listed to display that
+             * is over the max allowed.
+             * 
+             * @type Rx.Observable<Number>
+             */
+            var _filesTooManyForRendering$ = _newFilesForDisplay$.map(function(data) {
+                return Math.max(0, data.repo.tree.length - MAX_NODES);
+            }).share();
+
+            self.repoOverload$ = _newFilesForDisplay$.map(function(data){
+                console.log("Overload Fire");
+                return data.repo.tree.length > MAX_NODES ? data : null;
+            }).share();
+            
+            /**
+             * If there was an error displaying the repository then it is piped
+             * to this stream
+             * 
+             * @type Rx.Observable<String>
+             */
+            self.repoOverloadErrorMessage$ = self.repoOverload$.map(function(data){
+                
+                if(!data) {
+                    return "";
+                }
+                
+                return "Your trying to load way to big of a repository! Theres a combination of "+data.repo.tree.length+" files\
+                        and folders in this repository (I've set a max of " + MAX_NODES + ").  Try adding some folder to the filter\
+                        to help cut down on things!";
+            });
+                   
             self.userToggleSideView$ = new Rx.Subject();
 
             self.lastTreeCommand$ = Github.repositoryLoaded$
                     .map(function () {
                         return {repoLoaded: true};
-                    }).merge(self.userToggleSideView$);
-
+                    }).merge(self.userToggleSideView$).share();
+                    
             self.showCommitView$ = self.lastTreeCommand$
                     .scan(function (acc, x) {
                         return x.commitView ? !acc : false;
@@ -383,13 +435,20 @@ function TreeDisplayDirective() {
             self.showFileFilter$ = self.lastTreeCommand$
                     .scan(function (acc, x) {
                         return x.fileFilter ? !acc : false;
-                    }, false).share();
+                    }, false)
+                    .combineLatest(
+                    _filesTooManyForRendering$,
+                    function(lastToggle, tooMany) {
+                        return lastToggle || tooMany > 0;
+                    }).share();
 
             self.showSidebar$ = self.showFileFilter$
                     .combineLatest(
                             self.showCommitView$,
-                            function (fileFilter, commitView) {
-                                return fileFilter || commitView;
+                            _filesTooManyForRendering$.map(function(num){return num > 0;}),
+                            function (fileFilter, commitView, fileOverload) {
+//                                console.log(fileFilter, commitView, fileOverload);
+                                return fileFilter || commitView || fileOverload;
                             }
                     ).share();
 

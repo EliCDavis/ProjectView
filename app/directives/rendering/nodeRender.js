@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-var additionColor = "#00FF00";
-var deletionColor = "#FF0000";
+var additionColor = "#b3ffb3";
+var deletionColor = "#ffb3b3";
 
 module.exports = function (node, nodeCanvasPos, graph) {
 
@@ -141,8 +141,10 @@ module.exports = function (node, nodeCanvasPos, graph) {
         });
     }
     
-    if (signRender) { 
-        ctx.strokeStyle = "black";
+    if (signRender) {
+        
+        ctx.strokeStyle = signRender === "+" ? "#1aff1a" : "#ff4d4d";
+        
         ctx.lineWidth = 20*graph.getScale();
         var offset = (node.getRadius()*.4*graph.getScale());
         ctx.beginPath();

@@ -207,7 +207,6 @@ function GithubService() {
         
         _gh.getRepo(repoName).getTree(sha + "?recursive=1", function(e,d){
             if(!e){
-                console.log("Loaded Repo Tree");
                 self.repositoryTreeLoaded$.onNext(d.tree);
             }
         });

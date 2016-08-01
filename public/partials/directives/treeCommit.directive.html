@@ -3,9 +3,9 @@
 </h3>
 
 <md-list>
-    <md-list-item class="md-2-line" ng-repeat="commit in commits">
+    <md-list-item class="md-2-line" ng-repeat="commit in commits" >
         <div class="md-list-item-text">
-            <md-button ng-click="viewCommit(commit)" aria-label="view commit">
+            <md-button ng-click="viewCommit(commit)" aria-label="view commit" ng-class="{'highlighted-commit-list-item': commit.sha === treeCommit.commitLoaded.sha}">
                 <h3 ng-if="commit.committer.login" ng-bind="commit.committer.login" style="text-align: left; text-transform: none;"></h3>
                 <p ng-bind="commit.commit.message | truncate: 40: '...': true" style="text-align: left; text-transform: none; white-space: normal"></p>
             </md-button>

@@ -32,11 +32,19 @@ function TreeCommitDirective() {
         'controllerAs': 'treeCommit',
         'controller': /*@ngInject*/ function ($scope, Github) {
             
+            var self = this;
+            
+            self.commitLoaded = null;
+            
             Github.repositoryCommitsLoaded$.safeApply($scope, function(commits){
-                console.log(commits);
                 $scope.commits = commits;
+            }).subscribe();
+        
+            Github.commits$.safeApply($scope, function (commit){
+                self.commitLoaded = commit;
             }).subscribe();
             
         }
+        
     };
 }
