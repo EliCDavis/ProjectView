@@ -1,25 +1,27 @@
 <md-toolbar class="md-hue-2" style="min-height:36px; max-height:36px;">
     <div class="md-toolbar-tools">
-        
+
         <md-button ng-show="treeDisplay.displayRepositoryControls$" ng-click="treeDisplay.toggleFileFilter()" class="md-primary" aria-label="Filter Repository" >
             <md-tooltip>
                 Filter Node View
             </md-tooltip>
             <md-icon md-svg-src="img/icons/ic_visibility_white_24px.svg" aria-label="Visibile"></md-icon>
         </md-button>
-        
+
         <md-button ng-show="treeDisplay.displayRepositoryControls$" ng-click="treeDisplay.toggleCommitView()" class="md-primary" aria-label="View Commits">
             <md-tooltip>
                 Highlight Commits
             </md-tooltip>
             <md-icon md-svg-src="img/icons/ic_linear_scale_white_24px.svg" aria-label="Visibile"></md-icon>
         </md-button>
-        
+        <md-checkbox ng-model="treeDisplay.autoZoom" ng-change="treeDisplay.toggleAutoZoom()" aria-label="Autozoom" style="margin-top:15px; font-size: 18px;">
+            Auto-Zoom
+        </md-checkbox>
         <span flex></span>
 
         <h2>
             <span ng-bind="repo.details.full_name"></span>
         </h2>
-        
+
     </div>
 </md-toolbar>

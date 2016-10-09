@@ -38,10 +38,15 @@ function TreeDisplayDirective() {
 
             var canvas = $element.find('canvas');
 
-            var MAX_NODES = 800;
+            var MAX_NODES = 10000;
 
             var graph = new NodeView(canvas[0]);
             graph.setOption('applyGravity', false);
+            
+            self.autoZoom = true;
+            self.toggleAutoZoom = function(){
+                graph.setOption('centerOnNodes', self.autoZoom);
+            };
 
             self.inflatedTree = null;
 
@@ -71,8 +76,8 @@ function TreeDisplayDirective() {
 
             graph.setDefaultNodeRenderAndMouseDetection(
                     require('./rendering/nodeRender'), function (node, graph, mousePos) {
-                        return (node.distanceFrom(mousePos) <= node.getRadius() * .8);
-                    });
+                return (node.distanceFrom(mousePos) <= node.getRadius() * .8);
+            });
 
 
             /**
@@ -129,8 +134,15 @@ function TreeDisplayDirective() {
 
             var _convertTreeToNodes = function (tree, parent) {
 
-                if  (!parent) {
+                if (!parent) {
                     curNodesDisplayed = 0;
+                    parent = graph.batchCreateNode({
+                        renderData: {
+                            color: "#10A0C8",
+                            name: "root"
+                        },
+                        radius: 50
+                    });
                 }
 
                 if (curNodesDisplayed > MAX_NODES) {
@@ -142,7 +154,7 @@ function TreeDisplayDirective() {
                     if (curNodesDisplayed > MAX_NODES) {
                         return;
                     }
-                    curNodesDisplayed ++;
+                    curNodesDisplayed++;
 
                     var color = "";
                     var radius = parent ? parent.getRadius() * 0.7 : 300;
@@ -156,7 +168,7 @@ function TreeDisplayDirective() {
                         color = "#10A0C8";
                     }
 
-                    var node = graph.createNode({
+                    var node = graph.batchCreateNode({
                         renderData: {
                             color: color,
                             name: obj.name,
@@ -315,7 +327,7 @@ function TreeDisplayDirective() {
                 var additionalFiles = [];
                 if (newCommit) {
                     for (var i = 0; i < newCommit.files.length; i++) {
-                        if(newCommit.files[i].status === "removed"){
+                        if (newCommit.files[i].status === "removed") {
                             newCommit.files[i].path = newCommit.files[i].filename;
                             additionalFiles.push(newCommit.files[i]);
                         }
@@ -345,7 +357,7 @@ function TreeDisplayDirective() {
                     return true;
                 });
 
-                additionalFiles.forEach(function(file){
+                additionalFiles.forEach(function (file) {
                     repo.tree.push(file);
                 });
 
@@ -367,25 +379,20 @@ function TreeDisplayDirective() {
 
                         return item;
                     });
-                    
+
                 }
 
                 return {repo: repo, ignoredItems: ignoredItems};
 
             }).share();
 
-            _newFilesForDisplay$.safeApply($scope, function (item) {
-                $scope.repo = item.repo;
-            }).subscribe();
-
-            var _newTreeForDisplay$ = _newFilesForDisplay$.filter(function (data) {
-                return data.repo.tree.length < MAX_NODES;
-            }).share();
-            
+            // Display the tree whenever there's new files
             _newFilesForDisplay$.safeApply($scope, function (item) {
                 graph.clearNodes();
+                $scope.repo = item.repo;
                 self.inflatedTree = _inflateTree(item.repo.tree);
                 _convertTreeToNodes(self.inflatedTree);
+                graph.batchFlush();
             }).subscribe();
 
             /**
@@ -394,39 +401,39 @@ function TreeDisplayDirective() {
              * 
              * @type Rx.Observable<Number>
              */
-            var _filesTooManyForRendering$ = _newFilesForDisplay$.map(function(data) {
+            var _filesTooManyForRendering$ = _newFilesForDisplay$.map(function (data) {
                 return Math.max(0, data.repo.tree.length - MAX_NODES);
             }).share();
 
-            self.repoOverload$ = _newFilesForDisplay$.map(function(data){
+            self.repoOverload$ = _newFilesForDisplay$.map(function (data) {
                 console.log("Overload Fire");
                 return data.repo.tree.length > MAX_NODES ? data : null;
             }).share();
-            
+
             /**
              * If there was an error displaying the repository then it is piped
              * to this stream
              * 
              * @type Rx.Observable<String>
              */
-            self.repoOverloadErrorMessage$ = self.repoOverload$.map(function(data){
-                
-                if(!data) {
+            self.repoOverloadErrorMessage$ = self.repoOverload$.map(function (data) {
+
+                if (!data) {
                     return "";
                 }
-                
-                return "Your trying to load way to big of a repository! Theres a combination of "+data.repo.tree.length+" files\
+
+                return "You're trying to load way too big of a repository! There's a combination of " + data.repo.tree.length + " files\
                         and folders in this repository (I've set a max of " + MAX_NODES + ").  Try adding some folder to the filter\
                         to help cut down on things!";
             });
-                   
+
             self.userToggleSideView$ = new Rx.Subject();
 
             self.lastTreeCommand$ = Github.repositoryLoaded$
                     .map(function () {
                         return {repoLoaded: true};
                     }).merge(self.userToggleSideView$).share();
-                    
+
             self.showCommitView$ = self.lastTreeCommand$
                     .scan(function (acc, x) {
                         return x.commitView ? !acc : false;
@@ -437,15 +444,17 @@ function TreeDisplayDirective() {
                         return x.fileFilter ? !acc : false;
                     }, false)
                     .combineLatest(
-                    _filesTooManyForRendering$,
-                    function(lastToggle, tooMany) {
-                        return lastToggle || tooMany > 0;
-                    }).share();
+                            _filesTooManyForRendering$,
+                            function (lastToggle, tooMany) {
+                                return lastToggle || tooMany > 0;
+                            }).share();
 
             self.showSidebar$ = self.showFileFilter$
                     .combineLatest(
                             self.showCommitView$,
-                            _filesTooManyForRendering$.map(function(num){return num > 0;}),
+                            _filesTooManyForRendering$.map(function (num) {
+                                return num > 0;
+                            }),
                             function (fileFilter, commitView, fileOverload) {
 //                                console.log(fileFilter, commitView, fileOverload);
                                 return fileFilter || commitView || fileOverload;
