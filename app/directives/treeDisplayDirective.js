@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-var NodeView = require('../../../NodeView/src/Graph/Graph2D');
+var NodeView = require('NodeView');
 var Rx = require('rx');
 
 module.exports = TreeDisplayDirective;
