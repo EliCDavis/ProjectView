@@ -1,6 +1,9 @@
 # Project View
 
 Look at all the files in a github repository represented as a graph.
+
+No authentication means you're limited to 60 requests an hour from github.
+
 Check it out [here](https://elicdavis.github.io/ProjectView/).
 ![Preview](https://i.imgur.com/H3z0Nvr.png)
 
