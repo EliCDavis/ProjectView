@@ -1,7 +1,8 @@
 # Project View
+
 Look at all the files in a github repository represented as a graph.
-Check it out [here](http://jayusstudios.com/Projects/ProjectView/).
-![Preview](http://i.imgur.com/EbNsYpY.png)
+Check it out [here](https://elicdavis.github.io/ProjectView/).
+![Preview](https://i.imgur.com/H3z0Nvr.png)
 
 ## Setup
 ```

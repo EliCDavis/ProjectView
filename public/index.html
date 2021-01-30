@@ -8,68 +8,70 @@
 (_/           (_/                                    
 -->
 <html>
-    <head>
-        <title>Project View</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="style.css" rel="stylesheet">
-        <style>
-            body {
-                position: relative;
-            }
+  <head>
+    <title>Project View</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="style.css" rel="stylesheet" />
+    <style>
 
-            .content {
-                width: 100%;
-                height: 100%;
-                position: fixed;
-            }
+      body {
+        position: relative;
+      }
 
-            .md-errors-spacer {
-                display: none;
-            }
-            
-            .md-button {
-                min-width: 55px;
-            }
-            
-            .highlighted-commit-list-item {
-                border-color: green;
-                border-width: 1px;
-                border-style: solid;
-            }
-            
-            pv-repository-listing {
-                overflow:auto;
-                background-color: white; 
-                margin: 8px;
-                padding:8px;
-            }
-        </style>
-    </head>
-    <body ng-controller="MainController" layout-xs='column' layout="column" >
+      .content {
+        width: 100%;
+        height: 100%;
+        position: fixed;
+      }
 
-        <pv-toolbar></pv-toolbar>
+      .md-errors-spacer {
+        display: none;
+      }
 
+      .md-button {
+        min-width: 55px;
+      }
+
+      .highlighted-commit-list-item {
+        border-color: green;
+        border-width: 1px;
+        border-style: solid;
+      }
+
+      pv-repository-listing {
+        overflow: auto;
+        background-color: white;
+        margin: 8px;
+        padding: 8px;
+      }
+    </style>
+  </head>
+  <body ng-controller="MainController" layout-xs="column" layout="column">
+    <pv-toolbar></pv-toolbar>
+    <!-- 
         <div class="content" layout-align="center center" layout="column" ng-hide="loggedIn">
             <pv-github-login></pv-github-login>
-        </div>
+        </div> -->
 
-        <div flex layout="row" layout-xs="column" ng-show="loggedIn" layout-margin>
-            
-            <div flex='20' flex-xs="40" flex-sm="45" flex-md="30" flex layout="column">
+    <div flex layout="row" layout-xs="column" layout-margin>
+      <!-- <pv-user-login-card hide-xs></pv-user-login-card> -->
+      <!-- <pv-repository-listing flex md-whiteframe="3"></pv-repository-listing> -->
+      <div layout="column">
+        <pv-enter-repository-to-view></pv-enter-repository-to-view>
+        <pv-tree-commit flex layout="column" ng-show="true"></pv-tree-commit>
+      </div>
 
-                <pv-user-login-card hide-xs></pv-user-login-card>
-                <pv-repository-listing flex md-whiteframe="3"></pv-repository-listing>
-                <pv-enter-repository-to-view></pv-enter-repository-to-view>
+      <div layout="column" flex>
+        <pv-tree-display
+          flex
+          layout="column"
+          style="margin: 8px"
+          md-whiteframe="3"
+        ></pv-tree-display>
+      </div>
+    </div>
 
-            </div>
-
-            <div layout="column" flex >
-                <pv-tree-display flex layout="column" style='margin: 8px;' md-whiteframe="3"></pv-tree-display>
-            </div>
-
-        </div>
-            
-        <script src="main.js"></script>
-    </body>
+    <script src="main.js"></script>
+  </body>
 </html>
