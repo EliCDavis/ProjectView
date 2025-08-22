@@ -23,7 +23,7 @@
     "github-api": "^3.4.0",
     "gulp": "~5.0.1",
     "gulp-concat": "^2.6.0",
-    "gulp-notify": "~1.4.0",
+    "gulp-notify": "~5.0.0",
     "gulp-streamify": "^1.0.2",
     "gulp-uglify": "^1.5.4",
     "gulp-util": "~2.2.19",
