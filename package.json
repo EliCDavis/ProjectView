@@ -18,7 +18,7 @@
     "angular-animate": "^1.5.7",
     "angular-aria": "^1.5.7",
     "angular-material": "^1.1.0-rc.5",
-    "browserify": "~4.2.0",
+    "browserify": "~17.0.1",
     "browserify-ngannotate": "^2.0.0",
     "github-api": "^3.4.0",
     "gulp": "~3.8.5",
