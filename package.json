@@ -21,7 +21,7 @@
     "browserify": "~17.0.1",
     "browserify-ngannotate": "^2.0.0",
     "github-api": "^3.4.0",
-    "gulp": "~3.8.5",
+    "gulp": "~5.0.1",
     "gulp-concat": "^2.6.0",
     "gulp-notify": "~1.4.0",
     "gulp-streamify": "^1.0.2",
